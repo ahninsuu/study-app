@@ -59,7 +59,7 @@ except Exception as e:
     st.stop()
 
 # 2. 사용할 스프레드시트 주소 (고정)
-SHEET_URL = "https://docs.google.com/spreadsheets/d/여기에_실제_주소_붙여넣기"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/12QLzjgS21H-Jar-hQu5vlrxu1NNvaOVd_SYha264zz4/edit?gid=0#gid=0"
 if "sheet_url" in st.secrets:
     SHEET_URL = st.secrets["sheet_url"]
 
