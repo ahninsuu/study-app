@@ -65,7 +65,7 @@ except Exception as e:
 
 # 2. 사용할 스프레드시트 주소 (고정)
 # 여기에 사용하실 구글 스프레드시트 주소(URL)를 적어주세요.
-SHEET_URL = "https://docs.google.com/spreadsheets/d/여기에_실제_주소_붙여넣기"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/12QLzjgS21H-Jar-hQu5vlrxu1NNvaOVd_SYha264zz4/edit?gid=0#gid=0"
 
 # 클라우드 배포 시 Secrets에 주소를 숨겨둘 수도 있도록 지원해 드립니다.
 if "sheet_url" in st.secrets:
@@ -120,5 +120,7 @@ if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
     except Exception as e:
         st.error(f"스프레드시트를 불러오는 중 오류가 발생했습니다: {e}\n\n시트 URL이 올바른지 확인해주세요!")
 else:
-    st.info("시작하려면 데이터를 저장할 구글 스프레드시트를 하나 만들고 위의 칸에 URL을 붙여넣어 주세요.")
-    st.markdown("- **참고:** 스프레드시트는 사용자의 구글 계정에 빈 문서로 새로 만들어두시기만 하면 됩니다.")
+    st.info("시작하려면 사용할 구글 스프레드시트의 주소가 필요합니다.")
+    st.markdown("- **로컬 환경:** `streamlit_app.py` 파일 내의 `SHEET_URL` 변수에 주소를 직접 붙여넣으세요.")
+    st.markdown("- **클라우드 환경:** Streamlit Cloud의 `Secrets` 설정에 `sheet_url = \"...\"` 을 추가하세요.")
+    st.markdown("- (참고: 입력될 시트의 첫 번째 행은 컬럼명으로 자동 세팅됩니다.)")
