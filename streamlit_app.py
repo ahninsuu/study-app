@@ -140,46 +140,50 @@ if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
         if st.session_state.active_subject_id in sub_names:
             opt_idx = list(sub_names.keys()).index(st.session_state.active_subject_id)
             
-        c1, c2, c3 = st.columns([6, 2, 2])
-        selected_sub_id = c1.selectbox("과목 선택", options=list(sub_names.keys()), format_func=lambda x: sub_names[x], index=opt_idx)
+        c_sel, c_btn = st.columns([8, 2])
+        selected_sub_id = c_sel.selectbox("과목 선택", options=list(sub_names.keys()), format_func=lambda x: sub_names[x], index=opt_idx, label_visibility="collapsed")
         
         if selected_sub_id != st.session_state.active_subject_id:
             st.session_state.active_subject_id = selected_sub_id
             st.rerun()
 
-        if c2.button("➕ 새 과목", use_container_width=True):
-            new_sub = {"id": f"sub-{int(time.time()*1000)}", "name": "새 과목", "chapters": []}
-            st.session_state.subjects.append(new_sub)
-            st.session_state.active_subject_id = new_sub["id"]
-            sync_to_gsheets(st.session_state.subjects)
-            st.rerun()
-
-        if c3.button("🗑️ 과목 삭제", use_container_width=True):
-            if len(st.session_state.subjects) > 1:
-                st.session_state.subjects = [s for s in st.session_state.subjects if s["id"] != st.session_state.active_subject_id]
-                st.session_state.active_subject_id = st.session_state.subjects[0]["id"]
-                sync_to_gsheets(st.session_state.subjects)
-                st.rerun()
-            else:
-                st.error("최소 하나의 과목은 유지되어야 합니다.")
-                
         active_subject = next((s for s in st.session_state.subjects if s["id"] == st.session_state.active_subject_id), None)
-        
-        if active_subject:
-            # Active Subject Header
-            st.markdown("---")
-            nc1, nc2 = st.columns([8, 2])
-            new_name = nc1.text_input("현재 과목 이름", value=active_subject["name"], key=f"sname_{active_subject['id']}")
-            if new_name != active_subject["name"]:
-                active_subject["name"] = new_name
+
+        with c_btn.popover("⚙️ 과목 설정", use_container_width=True):
+            if active_subject:
+                new_name = st.text_input("과목 이름 변경", value=active_subject["name"], key=f"sname_pop_{active_subject['id']}")
+                if new_name != active_subject["name"]:
+                    active_subject["name"] = new_name
+                    sync_to_gsheets(st.session_state.subjects)
+                    st.rerun()
+                st.write("---")
+
+            if st.button("➕ 새 과목 추가", use_container_width=True):
+                new_sub = {"id": f"sub-{int(time.time()*1000)}", "name": "새 과목", "chapters": []}
+                st.session_state.subjects.append(new_sub)
+                st.session_state.active_subject_id = new_sub["id"]
                 sync_to_gsheets(st.session_state.subjects)
                 st.rerun()
 
+            if st.button("🗑️ 현재 과목 삭제", use_container_width=True):
+                if len(st.session_state.subjects) > 1:
+                    st.session_state.subjects = [s for s in st.session_state.subjects if s["id"] != st.session_state.active_subject_id]
+                    st.session_state.active_subject_id = st.session_state.subjects[0]["id"]
+                    sync_to_gsheets(st.session_state.subjects)
+                    st.rerun()
+                else:
+                    st.error("최소 하나의 과목은 유지되어야 합니다.")
+                
+        if active_subject:
+            st.markdown("---")
             total_sections = sum(len(ch.get("sections", [])) for ch in active_subject.get("chapters", []))
             completed_sections = sum(sum(1 for sec in ch.get("sections", []) if sec.get("completed")) for ch in active_subject.get("chapters", []))
             progress = int((completed_sections / total_sections) * 100) if total_sections > 0 else 0
             
-            st.progress(progress / 100, text=f"🔥 전체 달성률: {progress}% ({completed_sections}/{total_sections} 항목 완료)")
+            m1, m2 = st.columns([2, 8])
+            m1.metric("🔥 달성률", f"{progress}%")
+            m2.write(f"**전체 {total_sections} 항목 중 {completed_sections}개 완료**")
+            m2.progress(progress / 100)
 
             if st.button("➕ 새 챕터 추가"):
                 active_subject.setdefault("chapters", []).append({
@@ -198,17 +202,18 @@ if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
                 sections = chapter.get("sections", [])
                 completed_count = sum(1 for s in sections if s.get("completed"))
                 ch_title_display = chapter.get("title", "새 챕터")
+                if not chapter.get("title"): ch_title_display = "이름 없는 챕터"
                 
                 with st.expander(f"📁 {ch_title_display} ({completed_count}/{len(sections)})", expanded=True):
                     
-                    tc1, tc2 = st.columns([9, 1])
-                    new_ch_title = tc1.text_input("챕터 제목", value=chapter.get("title", ""), key=f"ch_title_{chapter['id']}", label_visibility="collapsed")
+                    tc1, tc2 = st.columns([11, 1])
+                    new_ch_title = tc1.text_input("챕터 제목", value=chapter.get("title", ""), key=f"ch_title_{chapter['id']}", label_visibility="collapsed", placeholder="챕터 제목을 여기에 적어주세요")
                     if new_ch_title != chapter.get("title", ""):
                         chapter["title"] = new_ch_title
                         sync_to_gsheets(st.session_state.subjects)
                         st.rerun()
                         
-                    if tc2.button("🗑️", key=f"del_ch_{chapter['id']}", help="챕터 삭제"):
+                    if tc2.button("🗑️", key=f"del_ch_{chapter['id']}", help="챕터 삭제", use_container_width=True):
                         active_subject["chapters"].remove(chapter)
                         sync_to_gsheets(st.session_state.subjects)
                         st.rerun()
@@ -217,16 +222,16 @@ if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
                     
                     # Sections
                     for s_idx, section in enumerate(sections):
-                        sc1, sc2, sc3, sc4, sc5 = st.columns([1, 4, 3, 1, 1])
+                        sc1, sc2, sc3, sc4, sc5 = st.columns([1, 9, 3, 2, 1])
                         
-                        new_comp = sc1.checkbox("완료", value=section.get("completed", False), key=f"comp_{chapter['id']}_{section['id']}")
+                        new_comp = sc1.checkbox("완료", value=section.get("completed", False), key=f"comp_{chapter['id']}_{section['id']}", label_visibility="collapsed")
                         if new_comp != section.get("completed", False):
                             section["completed"] = new_comp
                             sync_to_gsheets(st.session_state.subjects)
                             st.rerun()
                             
                         sec_title = section.get("title", "")
-                        new_sec_title = sc2.text_input("세부 항목", value=sec_title, key=f"stitle_{chapter['id']}_{section['id']}", label_visibility="collapsed", placeholder="세부 내용을 입력하세요")
+                        new_sec_title = sc2.text_input("세부 항목", value=sec_title, key=f"stitle_{chapter['id']}_{section['id']}", label_visibility="collapsed", placeholder="세부 학습 내용을 자유롭게 입력하세요")
                         if new_sec_title != sec_title:
                             section["title"] = new_sec_title
                             sync_to_gsheets(st.session_state.subjects)
@@ -234,7 +239,7 @@ if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
                             
                         new_date = sc3.date_input("날짜 선택", key=f"sdate_{chapter['id']}_{section['id']}", label_visibility="collapsed")
                         
-                        if sc4.button("➕ 날짜", key=f"add_d_{chapter['id']}_{section['id']}", help="선택한 날짜 기록에 추가"):
+                        if sc4.button("➕ 날짜", key=f"add_d_{chapter['id']}_{section['id']}", help="현재 선택한 날짜를 이 항목 기록에 추가합니다.", use_container_width=True):
                             d_str = str(new_date)
                             dates = section.get("dates", [])
                             if d_str not in dates:
@@ -243,7 +248,7 @@ if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
                                 sync_to_gsheets(st.session_state.subjects)
                                 st.rerun()
                                 
-                        if sc5.button("❌", key=f"del_s_{chapter['id']}_{section['id']}", help="세부 항목 삭제"):
+                        if sc5.button("🗑️", key=f"del_s_{chapter['id']}_{section['id']}", help="항목 자체를 삭제합니다.", use_container_width=True):
                             chapter["sections"].remove(section)
                             sync_to_gsheets(st.session_state.subjects)
                             st.rerun()
@@ -251,7 +256,7 @@ if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
                         # Recorded Dates (Multiselect for viewing & deleting)
                         recorded_dates = section.get("dates", [])
                         if recorded_dates:
-                            ms_dates = st.multiselect("기록된 날짜 (지우려면 X 클릭)", options=recorded_dates, default=recorded_dates, key=f"ms_dates_{chapter['id']}_{section['id']}", label_visibility="collapsed")
+                            ms_dates = st.multiselect("학습한 날짜 기록 (X를 누르면 지워집니다)", options=recorded_dates, default=recorded_dates, key=f"ms_dates_{chapter['id']}_{section['id']}", label_visibility="collapsed")
                             if set(ms_dates) != set(recorded_dates):
                                 section["dates"] = sorted(ms_dates)
                                 sync_to_gsheets(st.session_state.subjects)
