@@ -24,6 +24,18 @@ def get_sheets_client():
         except Exception as e:
             st.error(f"서비스 계정 인증 중 오류 발생: {e}")
 
+    # 1.5. 시크릿(OAuth Token) 확인 (클라우드/배포 환경에서 서비스 계정을 만들 수 없을 때의 대안)
+    if "oauth_token" in st.secrets:
+        try:
+            # 로컬에서 생성된 token.json 내용을 그대로 시크릿에 넣어 활용
+            token_info = st.secrets["oauth_token"]
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            return gspread.authorize(creds)
+        except Exception as e:
+            st.error(f"OAuth 시크릿 인증 중 오류 발생: {e}")
+
     # 2. 로컬 OAuth 인증 (개발 환경용)
     # credentials.json 파일이 없으면 안내 메시지 출력
     if not os.path.exists('credentials.json') and not os.path.exists('token.json'):
