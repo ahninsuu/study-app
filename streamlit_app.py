@@ -63,12 +63,17 @@ except Exception as e:
     st.error(f"구글 로그인 인증에 실패했습니다! (에러: {e})")
     st.stop()
 
-# 2. 스프레드시트 URL 입력 (초기 1회)
-sheet_url = st.text_input("스프레드시트 URL을 입력해주세요 (브라우저 주소창 복사)", placeholder="https://docs.google.com/spreadsheets/d/...")
+# 2. 사용할 스프레드시트 주소 (고정)
+# 여기에 사용하실 구글 스프레드시트 주소(URL)를 적어주세요.
+SHEET_URL = "https://docs.google.com/spreadsheets/d/여기에_실제_주소_붙여넣기"
 
-if sheet_url:
+# 클라우드 배포 시 Secrets에 주소를 숨겨둘 수도 있도록 지원해 드립니다.
+if "sheet_url" in st.secrets:
+    SHEET_URL = st.secrets["sheet_url"]
+
+if SHEET_URL and "여기에_실제_주소_붙여넣기" not in SHEET_URL:
     try:
-        sh = gc.open_by_url(sheet_url)
+        sh = gc.open_by_url(SHEET_URL)
         worksheet = sh.sheet1
         
         # 3. 빈 시트일 경우 헤더 자동 추가
